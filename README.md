@@ -69,6 +69,26 @@ The code is modular: separate functions handle device scanning, modifier trackin
 
 ---
 
+
+## Quickstart
+
+```bash
+# Full setup, build, and install
+python3 app.py all
+
+# Just build
+python3 app.py build
+
+# Start the daemon
+python3 app.py start
+
+# Read last 50 lines of log
+python3 app.py read --lines 50
+
+# Interactive menu
+python3 app.py
+```
+
 ## Building from Source
 
 ```bash
