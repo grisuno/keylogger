@@ -12,7 +12,7 @@
 #   - Runtime control (start, stop, status, read logs)
 #
 # Usage:
-#   python3 keylogger_orchestrator.py [command]
+#   python3 app.py [command]
 #
 # Commands:
 #   setup      - Run install.sh and configure (full preparation)
