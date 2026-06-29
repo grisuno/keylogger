@@ -1,0 +1,15 @@
+# Keylogger configuration file
+# Place at /etc/keylogger.conf or ~/.keylogger.conf
+#
+# Lines starting with # or ; are comments.
+# Format: key = value
+
+# Log file path (default: /tmp/.keylog)
+log_file = /tmp/.keylog
+
+# Run in foreground (don't daemonize). Useful for debugging.
+# Values: 0, 1, yes, no, true, false
+foreground = 0
+
+# Enable debug output (implies foreground=1)
+debug = 0
