@@ -1,0 +1,94 @@
+# Subsystem: root
+
+## app.py
+- Layer: utility
+- Doc: ------------------------------------------------------------------------------ keylogger_orchestrator.py - Orchestration
+- Language: py
+- Symbols:
+  - `Colours` (class, line 43) `class Colours`
+  - `info` (method, line 53) `def info(msg)`
+  - `ok` (method, line 54) `def ok(msg)`
+  - `warn` (method, line 55) `def warn(msg)`
+  - `error` (method, line 56) `def error(msg)`
+  - `run_command` (method, line 61) `def run_command(cmd, cwd, check, capture)`
+  - `file_exists` (method, line 81) `def file_exists(path)`
+  - `dir_exists` (method, line 84) `def dir_exists(path)`
+  - `require_file` (method, line 87) `def require_file(path, description)`
+  - `require_dir` (method, line 92) `def require_dir(path, description)`
+  - `check_sudo` (method, line 97) `def check_sudo()`
+  - `Orchestrator` (class, line 112) `class Orchestrator`
+  - `interactive_menu` (method, line 231) `def interactive_menu(orch)`
+  - `parse_args` (method, line 278) `def parse_args()`
+  - `main` (method, line 306) `def main()`
+  - `__init__` (method, line 113) `def __init__(self, base_dir)`
+  - `check_prerequisites` (method, line 123) `def check_prerequisites(self)`
+  - `setup` (method, line 135) `def setup(self)`
+  - `build` (method, line 159) `def build(self)`
+  - `install` (method, line 172) `def install(self)`
+  - `start` (method, line 186) `def start(self)`
+  - `stop` (method, line 196) `def stop(self)`
+  - `status` (method, line 202) `def status(self)`
+  - `read_log` (method, line 207) `def read_log(self, lines)`
+  - `clean` (method, line 214) `def clean(self)`
+  - `full_chain` (method, line 220) `def full_chain(self)`
+
+## configure.sh
+- Layer: infrastructure
+- Doc: configure - Environment verification script for the Linux keylogger (evdev-based) project.  Usage: ./configure [--prefix
+- Language: sh
+- Symbols:
+  - `msg_info` (function, line 53)
+  - `msg_ok` (function, line 54)
+  - `msg_warn` (function, line 55)
+  - `msg_error` (function, line 56)
+  - `command_exists` (function, line 59)
+  - `check_header` (function, line 64)
+  - `can_read_device` (function, line 71)
+
+## install.sh
+- Layer: utility
+- Doc: ============================================================================= install.sh - Prerequisite installer for th
+- Language: sh
+- Symbols:
+  - `info` (function, line 25)
+  - `ok` (function, line 26)
+  - `warn` (function, line 27)
+  - `error` (function, line 28)
+  - `check_root` (function, line 31)
+  - `install_packages` (function, line 38)
+  - `main` (function, line 67)
+
+## keylogger.c
+- Layer: infrastructure
+- Language: c
+- Symbols:
+  - `config_t` (struct, line 49)
+  - `signal_handler` (function, line 77) `static void signal_handler(int sig)`
+  - `shift_symbol` (function, line 168) `static const char *shift_symbol(unsigned int code)`
+  - `update_modifiers` (function, line 198) `static void update_modifiers(unsigned int code, int value)`
+  - `key_to_string` (function, line 212) `static int key_to_string(unsigned int code, int value, char *out, size_t out_size)`
+  - `write_log` (function, line 271) `static void write_log(const char *str)`
+  - `is_keyboard_device` (function, line 298) `static int is_keyboard_device(int fd)`
+  - `open_keyboard_by_index` (function, line 314) `static int open_keyboard_by_index(int idx)`
+  - `scan_keyboards` (function, line 329) `static int scan_keyboards(int *fds, int max_count)`
+  - `close_keyboards` (function, line 345) `static void close_keyboards(int *fds, int count)`
+  - `parse_config_line` (function, line 354) `static void parse_config_line(const char *line)`
+  - `load_config` (function, line 405) `static void load_config(const char *path)`
+  - `init_config` (function, line 420) `static void init_config()`
+  - `print_usage` (function, line 433) `static void print_usage(const char *prog)`
+  - `process_event` (function, line 444) `static void process_event(struct input_event *ev)`
+  - `handle_inotify` (function, line 456) `static int handle_inotify(int inotify_fd, int *fds, int *count)`
+  - `run_keylogger` (function, line 477) `static void run_keylogger()`
+  - `daemonize` (function, line 589) `static void daemonize()`
+  - `main` (function, line 625) `int main(int argc, char *argv[])`
+  - `_GNU_SOURCE` (macro, line 14) `#define _GNU_SOURCE`
+  - `LOG_FILE_DEFAULT` (macro, line 35) `#define LOG_FILE_DEFAULT`
+  - `PID_FILE` (macro, line 36) `#define PID_FILE`
+  - `CONF_FILE_SYSTEM` (macro, line 37) `#define CONF_FILE_SYSTEM`
+  - `CONF_FILE_USER` (macro, line 38) `#define CONF_FILE_USER`
+  - `POLL_TIMEOUT_MS` (macro, line 39) `#define POLL_TIMEOUT_MS`
+  - `MAX_KEYBOARDS` (macro, line 40) `#define MAX_KEYBOARDS`
+  - `KEY_MAP_SIZE` (macro, line 41) `#define KEY_MAP_SIZE`
+  - `CONF_LINE_MAX` (macro, line 42) `#define CONF_LINE_MAX`
+  - `EVENT_BUF_LEN` (macro, line 43) `#define EVENT_BUF_LEN`
+  - `INOTIFY_BUF_LEN` (macro, line 44) `#define INOTIFY_BUF_LEN`
