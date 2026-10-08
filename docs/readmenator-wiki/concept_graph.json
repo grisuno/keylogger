@@ -1,0 +1,491 @@
+{
+  "concepts": [
+    {
+      "name": "keylogger",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 13,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "check",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 10,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "user",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "make",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 18,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "install",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 17,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "file",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 13,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "run",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 12,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "input",
+      "files": [
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 11,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "event",
+      "files": [
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 10,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "linux",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "log",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "can",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 6,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "dev",
+      "files": [
+        "configure.sh",
+        "install.sh",
+        "keylogger.c"
+      ],
+      "mentions": 5,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "script",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 5,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "sudo",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 5,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "usage",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "error",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "evdev",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "info",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "project",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "warn",
+      "files": [
+        "app.py",
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "read",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 8,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "build",
+      "files": [
+        "app.py",
+        "install.sh"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "config",
+      "files": [
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "configure",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "device",
+      "files": [
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 7,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "command",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 6,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "exists",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 6,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "all",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 5,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "based",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "configuration",
+      "files": [
+        "configure.sh",
+        "keylogger.c"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "installation",
+      "files": [
+        "app.py",
+        "install.sh"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "root",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 4,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "compile",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "group",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "help",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "parse",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "via",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 3,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "current",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "default",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "environment",
+      "files": [
+        "app.py",
+        "configure.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "exist",
+      "files": [
+        "app.py",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "functions",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "gcc",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "headers",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "helper",
+      "files": [
+        "configure.sh",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "loop",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "output",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "prerequisite",
+      "files": [
+        "app.py",
+        "install.sh"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    },
+    {
+      "name": "return",
+      "files": [
+        "app.py",
+        "keylogger.c"
+      ],
+      "mentions": 2,
+      "confidence": "EXTRACTED"
+    }
+  ],
+  "relations": [],
+  "dialectic": [
+    "Thesis: `all` centralizes 2 files; Antithesis: `check` pulls 4 files with 2 shared (Jaccard 0.50); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `default` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `file` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `keylogger` pulls 4 files with 2 shared (Jaccard 0.50); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `log` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `loop` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `output` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `parse` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `return` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?",
+    "Thesis: `all` centralizes 2 files; Antithesis: `run` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?"
+  ]
+}
