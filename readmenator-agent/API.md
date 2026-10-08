@@ -1,65 +1,216 @@
 # API
 
 ## app.py
-- `Colours.info` (method) `app.py:53` `def info(msg)`
-- `Colours.ok` (method) `app.py:54` `def ok(msg)`
-- `Colours.warn` (method) `app.py:55` `def warn(msg)`
-- `Colours.error` (method) `app.py:56` `def error(msg)`
-- `Colours.run_command` (method) `app.py:61` `def run_command(cmd, cwd, check, capture)` -- Run a shell command and return its output/status.
-- `Colours.file_exists` (method) `app.py:81` `def file_exists(path)`
-- `Colours.dir_exists` (method) `app.py:84` `def dir_exists(path)`
-- `Colours.require_file` (method) `app.py:87` `def require_file(path, description)`
-- `Colours.require_dir` (method) `app.py:92` `def require_dir(path, description)`
-- `Colours.check_sudo` (method) `app.py:97` `def check_sudo()` -- Check if sudo is available and the user can run it.
-- `Orchestrator.__init__` (method) `app.py:113` `def __init__(self, base_dir)`
-- `Orchestrator.check_prerequisites` (method) `app.py:123` `def check_prerequisites(self)` -- Verify that all expected files exist.
-- `Orchestrator.setup` (method) `app.py:135` `def setup(self)` -- Run install.sh and configure.
-- `Orchestrator.build` (method) `app.py:159` `def build(self)` -- Compile the keylogger using make.
-- `Orchestrator.install` (method) `app.py:172` `def install(self)` -- Run make install (requires sudo).
-- `Orchestrator.start` (method) `app.py:186` `def start(self)` -- Start the daemon (make run).
-- `Orchestrator.stop` (method) `app.py:196` `def stop(self)` -- Stop the daemon (make stop).
-- `Orchestrator.status` (method) `app.py:202` `def status(self)` -- Show status (make status).
-- `Orchestrator.read_log` (method) `app.py:207` `def read_log(self, lines)` -- Show log (make read).
-- `Orchestrator.clean` (method) `app.py:214` `def clean(self)` -- Clean build artifacts (make clean).
-- `Orchestrator.full_chain` (method) `app.py:220` `def full_chain(self)` -- Run setup, build, install.
-- `Orchestrator.interactive_menu` (method) `app.py:231` `def interactive_menu(orch)` -- Show a text-based menu and loop until exit.
-- `Orchestrator.parse_args` (method) `app.py:278` `def parse_args()`
-- `Orchestrator.main` (method) `app.py:306` `def main()`
+
+### info (method) `def info(msg)`
+- Defined: `app.py:53`
+
+### ok (method) `def ok(msg)`
+- Defined: `app.py:54`
+
+### warn (method) `def warn(msg)`
+- Defined: `app.py:55`
+
+### error (method) `def error(msg)`
+- Defined: `app.py:56`
+
+### run_command (method) `def run_command(cmd, cwd, check, capture)`
+- Defined: `app.py:61`
+- Doc: Run a shell command and return its output/status.
+
+### file_exists (method) `def file_exists(path)`
+- Defined: `app.py:81`
+
+### dir_exists (method) `def dir_exists(path)`
+- Defined: `app.py:84`
+
+### require_file (method) `def require_file(path, description)`
+- Defined: `app.py:87`
+
+### require_dir (method) `def require_dir(path, description)`
+- Defined: `app.py:92`
+
+### check_sudo (method) `def check_sudo()`
+- Defined: `app.py:97`
+- Doc: Check if sudo is available and the user can run it.
+
+### interactive_menu (method) `def interactive_menu(orch)`
+- Defined: `app.py:231`
+- Doc: Show a text-based menu and loop until exit.
+
+### parse_args (method) `def parse_args()`
+- Defined: `app.py:278`
+
+### main (method) `def main()`
+- Defined: `app.py:306`
+
+### __init__ (method) `def __init__(self, base_dir)`
+- Defined: `app.py:113`
+
+### check_prerequisites (method) `def check_prerequisites(self)`
+- Defined: `app.py:123`
+- Doc: Verify that all expected files exist.
+
+### setup (method) `def setup(self)`
+- Defined: `app.py:135`
+- Doc: Run install.sh and configure.
+
+### build (method) `def build(self)`
+- Defined: `app.py:159`
+- Doc: Compile the keylogger using make.
+
+### install (method) `def install(self)`
+- Defined: `app.py:172`
+- Doc: Run make install (requires sudo).
+
+### start (method) `def start(self)`
+- Defined: `app.py:186`
+- Doc: Start the daemon (make run).
+
+### stop (method) `def stop(self)`
+- Defined: `app.py:196`
+- Doc: Stop the daemon (make stop).
+
+### status (method) `def status(self)`
+- Defined: `app.py:202`
+- Doc: Show status (make status).
+
+### read_log (method) `def read_log(self, lines)`
+- Defined: `app.py:207`
+- Doc: Show log (make read).
+
+### clean (method) `def clean(self)`
+- Defined: `app.py:214`
+- Doc: Clean build artifacts (make clean).
+
+### full_chain (method) `def full_chain(self)`
+- Defined: `app.py:220`
+- Doc: Run setup, build, install.
 
 ## configure.sh
-- `msg_info` (function) `configure.sh:53`
-- `msg_ok` (function) `configure.sh:54`
-- `msg_warn` (function) `configure.sh:55`
-- `msg_error` (function) `configure.sh:56`
-- `command_exists` (function) `configure.sh:59` -- Check if a command exists
-- `check_header` (function) `configure.sh:64` -- Check if a C header exists by trying to compile a tiny program
-- `can_read_device` (function) `configure.sh:71` -- Check if we can read a device file (by opening it)
+
+### msg_info (function)
+- Defined: `configure.sh:53`
+- Doc: ---------------------------------------------------------------------------- Helper functions --------------------------
+
+### msg_ok (function)
+- Defined: `configure.sh:54`
+
+### msg_warn (function)
+- Defined: `configure.sh:55`
+
+### msg_error (function)
+- Defined: `configure.sh:56`
+
+### command_exists (function)
+- Defined: `configure.sh:59`
+- Doc: Check if a command exists
+
+### check_header (function)
+- Defined: `configure.sh:64`
+- Doc: Check if a C header exists by trying to compile a tiny program
+
+### can_read_device (function)
+- Defined: `configure.sh:71`
+- Doc: Check if we can read a device file (by opening it)
 
 ## install.sh
-- `info` (function) `install.sh:25`
-- `ok` (function) `install.sh:26`
-- `warn` (function) `install.sh:27`
-- `error` (function) `install.sh:28`
-- `check_root` (function) `install.sh:31` -- Check if we are running as root (or with sudo)
-- `install_packages` (function) `install.sh:38` -- Detect the package manager and install packages
-- `main` (function) `install.sh:67`
+
+### info (function)
+- Defined: `install.sh:25`
+- Doc: ---------------------------------------------------------------------------- Helper functions --------------------------
+
+### ok (function)
+- Defined: `install.sh:26`
+
+### warn (function)
+- Defined: `install.sh:27`
+
+### error (function)
+- Defined: `install.sh:28`
+
+### check_root (function)
+- Defined: `install.sh:31`
+- Doc: Check if we are running as root (or with sudo)
+
+### install_packages (function)
+- Defined: `install.sh:38`
+- Doc: Detect the package manager and install packages
+
+### main (function)
+- Defined: `install.sh:67`
+- Doc: ---------------------------------------------------------------------------- Main installation routine -----------------
 
 ## keylogger.c
-- `signal_handler` (function) `keylogger.c:77` `static void signal_handler(int sig)`
-- `shift_symbol` (function) `keylogger.c:168` `static const char *shift_symbol(unsigned int code)`
-- `update_modifiers` (function) `keylogger.c:198` `static void update_modifiers(unsigned int code, int value)`
-- `key_to_string` (function) `keylogger.c:212` `static int key_to_string(unsigned int code, int value, char *out, size_t out_size)`
-- `write_log` (function) `keylogger.c:271` `static void write_log(const char *str)`
-- `is_keyboard_device` (function) `keylogger.c:298` `static int is_keyboard_device(int fd)`
-- `open_keyboard_by_index` (function) `keylogger.c:314` `static int open_keyboard_by_index(int idx)`
-- `scan_keyboards` (function) `keylogger.c:329` `static int scan_keyboards(int *fds, int max_count)`
-- `close_keyboards` (function) `keylogger.c:345` `static void close_keyboards(int *fds, int count)`
-- `parse_config_line` (function) `keylogger.c:354` `static void parse_config_line(const char *line)`
-- `load_config` (function) `keylogger.c:405` `static void load_config(const char *path)`
-- `init_config` (function) `keylogger.c:420` `static void init_config()`
-- `print_usage` (function) `keylogger.c:433` `static void print_usage(const char *prog)`
-- `process_event` (function) `keylogger.c:444` `static void process_event(struct input_event *ev)`
-- `handle_inotify` (function) `keylogger.c:456` `static int handle_inotify(int inotify_fd, int *fds, int *count)`
-- `run_keylogger` (function) `keylogger.c:477` `static void run_keylogger()`
-- `daemonize` (function) `keylogger.c:589` `static void daemonize()`
-- `main` (function) `keylogger.c:625` `int main(int argc, char *argv[])`
+
+### signal_handler (function) `static void signal_handler(int sig)`
+- Defined: `keylogger.c:77`
+- Doc: -------------------------------------------------------------------------- Signal handler ------------------------------
+
+### shift_symbol (function) `static const char *shift_symbol(unsigned int code)`
+- Defined: `keylogger.c:168`
+- Doc: -------------------------------------------------------------------------- Shift-symbol mapping for US QWERTY ----------
+
+### update_modifiers (function) `static void update_modifiers(unsigned int code, int value)`
+- Defined: `keylogger.c:198`
+- Doc: -------------------------------------------------------------------------- Modifier updates ----------------------------
+
+### key_to_string (function) `static int key_to_string(unsigned int code, int value, char *out, size_t out_size)`
+- Defined: `keylogger.c:212`
+- Doc: -------------------------------------------------------------------------- Key code to string conversion (thread-safe, u
+
+### write_log (function) `static void write_log(const char *str)`
+- Defined: `keylogger.c:271`
+- Doc: -------------------------------------------------------------------------- Write a string to the log file (and stderr if
+
+### is_keyboard_device (function) `static int is_keyboard_device(int fd)`
+- Defined: `keylogger.c:298`
+- Doc: -------------------------------------------------------------------------- Check if a device is a keyboard via ioctl ---
+
+### open_keyboard_by_index (function) `static int open_keyboard_by_index(int idx)`
+- Defined: `keylogger.c:314`
+- Doc: -------------------------------------------------------------------------- Try to open a keyboard by event device index 
+
+### scan_keyboards (function) `static int scan_keyboards(int *fds, int max_count)`
+- Defined: `keylogger.c:329`
+- Doc: -------------------------------------------------------------------------- Scan all /dev/input/event* and return keyboar
+
+### close_keyboards (function) `static void close_keyboards(int *fds, int count)`
+- Defined: `keylogger.c:345`
+- Doc: -------------------------------------------------------------------------- Close all keyboard file descriptors ---------
+
+### parse_config_line (function) `static void parse_config_line(const char *line)`
+- Defined: `keylogger.c:354`
+- Doc: -------------------------------------------------------------------------- Parse a single config line (key = value) ----
+
+### load_config (function) `static void load_config(const char *path)`
+- Defined: `keylogger.c:405`
+- Doc: -------------------------------------------------------------------------- Load configuration from a file --------------
+
+### init_config (function) `static void init_config()`
+- Defined: `keylogger.c:420`
+- Doc: -------------------------------------------------------------------------- Initialize configuration from all known sourc
+
+### print_usage (function) `static void print_usage(const char *prog)`
+- Defined: `keylogger.c:433`
+- Doc: -------------------------------------------------------------------------- Print usage ---------------------------------
+
+### process_event (function) `static void process_event(struct input_event *ev)`
+- Defined: `keylogger.c:444`
+- Doc: -------------------------------------------------------------------------- Process event from a keyboard device --------
+
+### handle_inotify (function) `static int handle_inotify(int inotify_fd, int *fds, int *count)`
+- Defined: `keylogger.c:456`
+- Doc: -------------------------------------------------------------------------- Handle inotify event (new/removed devices in 
+
+### run_keylogger (function) `static void run_keylogger()`
+- Defined: `keylogger.c:477`
+- Doc: -------------------------------------------------------------------------- Main keylogger loop -------------------------
+
+### daemonize (function) `static void daemonize()`
+- Defined: `keylogger.c:589`
+- Doc: -------------------------------------------------------------------------- Daemonize (fork, detach from terminal) ------
+
+### main (function) `int main(int argc, char *argv[])`
+- Defined: `keylogger.c:625`
+- Doc: -------------------------------------------------------------------------- Main ----------------------------------------

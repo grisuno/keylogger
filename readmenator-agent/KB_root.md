@@ -1,8 +1,8 @@
 # Subsystem: root
 
 ## app.py
-- Doc: run_command: Run a shell command and return its output/status.
 - Layer: utility
+- Doc: ------------------------------------------------------------------------------ keylogger_orchestrator.py - Orchestration
 - Language: py
 - Symbols:
   - `Colours` (class, line 43) `class Colours`
@@ -33,8 +33,8 @@
   - `full_chain` (method, line 220) `def full_chain(self)`
 
 ## configure.sh
-- Doc: configure - Environment verification script for the Linux keylogger (evdev-based) project.
 - Layer: infrastructure
+- Doc: configure - Environment verification script for the Linux keylogger (evdev-based) project.  Usage: ./configure [--prefix
 - Language: sh
 - Symbols:
   - `msg_info` (function, line 53)
@@ -46,8 +46,8 @@
   - `can_read_device` (function, line 71)
 
 ## install.sh
-- Doc: check_root: Check if we are running as root (or with sudo)
 - Layer: utility
+- Doc: ============================================================================= install.sh - Prerequisite installer for th
 - Language: sh
 - Symbols:
   - `info` (function, line 25)
@@ -59,7 +59,7 @@
   - `main` (function, line 67)
 
 ## keylogger.c
-- Layer: utility
+- Layer: infrastructure
 - Language: c
 - Symbols:
   - `config_t` (struct, line 49)

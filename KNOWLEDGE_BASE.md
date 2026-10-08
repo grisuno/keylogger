@@ -11,7 +11,7 @@
 
 **Total Files Parsed:** 4 | **Total Symbols Extracted:** 70 | **Total Imports:** 24
 
-<!-- ranking_model: v1.0 | weights: {ppr:0.45,auth:0.2,test:0.15,doc:0.1,fresh:0.1} | alpha:0.85 | commit:1e0fd0b | date:2026-07-18 -->
+<!-- ranking_model: v1.0 | weights: {ppr:0.45,auth:0.2,test:0.15,doc:0.1,fresh:0.1} | alpha:0.85 | commit:05a4468 | date:2026-07-18 -->
 
 
 ## Table of Contents
@@ -25,12 +25,11 @@
 7. [Hotspot Analysis](#hotspot-analysis)
 8. [Change Impact Analysis](#change-impact-analysis)
 9. [Suggested Linting Rules](#suggested-linting-rules)
-10. [Concept Graph](#concept-graph)
-11. [Query Recipes](#query-recipes)
-12. [Structural Knowledge Map](#structural-knowledge-map)
-13. [UML Class Diagram](#uml-class-diagram)
-14. [Code Property Graph](#code-property-graph)
-15. [Architecture Reference](#architecture-reference)
+10. [Query Recipes](#query-recipes)
+11. [Structural Knowledge Map](#structural-knowledge-map)
+12. [UML Class Diagram](#uml-class-diagram)
+13. [Code Property Graph](#code-property-graph)
+14. [Architecture Reference](#architecture-reference)
     - [C (1 files)](#c-1-files)
     - [PY (1 files)](#py-1-files)
     - [SH (2 files)](#sh-2-files)
@@ -65,18 +64,18 @@ Auto-detected from path patterns, naming conventions, and imported frameworks.
 
 | Layer | Files |
 |-------|-------|
-| utility | 3 |
-| infrastructure | 1 |
+| utility | 2 |
+| infrastructure | 2 |
 
 ### utility
 
 - `app.py` (py, 26 symbols)
 - `install.sh` (sh, 7 symbols)
-- `keylogger.c` (c, 30 symbols)
 
 ### infrastructure
 
 - `configure.sh` (sh, 7 symbols)
+- `keylogger.c` (c, 30 symbols)
 
 ---
 
@@ -143,60 +142,6 @@ Files ranked by combined complexity (symbol count) and centrality (connection co
 | `install.sh` | 0.233 | 0.000 | 0.093 | 7 | 0 |
 | `keylogger.c` | 1.000 | 1.000 | 1.000 | 30 | 16 |
 | `app.py` | 0.867 | 0.500 | 0.647 | 26 | 8 |
-
----
-
-## Concept Graph
-
-Semantic second-brain layer: nouns are concept nodes, verbs are edges. Each noun maps atomically to a file set (EXTRACTED); each verb aggregates structural imports, calls, and inherits into consumes, invokes, extends, depends_on, or bridges (INFERRED).
-
-**50 concepts, 0 relations.**
-
-| Concept | Files | Mentions |
-|---------|-------|----------|
-| `keylogger` | 4 | 13 |
-| `check` | 4 | 10 |
-| `user` | 4 | 4 |
-| `make` | 3 | 18 |
-| `install` | 3 | 17 |
-| `file` | 3 | 13 |
-| `run` | 3 | 12 |
-| `input` | 3 | 11 |
-| `event` | 3 | 10 |
-| `linux` | 3 | 7 |
-| `log` | 3 | 7 |
-| `can` | 3 | 6 |
-| `dev` | 3 | 5 |
-| `script` | 3 | 5 |
-| `sudo` | 3 | 5 |
-| `usage` | 3 | 4 |
-| `error` | 3 | 3 |
-| `evdev` | 3 | 3 |
-| `info` | 3 | 3 |
-| `project` | 3 | 3 |
-| `warn` | 3 | 3 |
-| `read` | 2 | 8 |
-| `build` | 2 | 7 |
-| `config` | 2 | 7 |
-| `configure` | 2 | 7 |
-| `device` | 2 | 7 |
-| `command` | 2 | 6 |
-| `exists` | 2 | 6 |
-| `all` | 2 | 5 |
-| `based` | 2 | 4 |
-
-### Dialectic Prompts
-
-- Thesis: `all` centralizes 2 files; Antithesis: `check` pulls 4 files with 2 shared (Jaccard 0.50); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `default` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `file` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `keylogger` pulls 4 files with 2 shared (Jaccard 0.50); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `log` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `loop` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `output` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `parse` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `return` pulls 2 files with 2 shared (Jaccard 1.00); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
-- Thesis: `all` centralizes 2 files; Antithesis: `run` pulls 3 files with 2 shared (Jaccard 0.67); Synthesis: should they merge, split by layer, or keep `bridges` explicit?
 
 ---
 
